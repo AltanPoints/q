@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Altan Points - Babam İçin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
+        
+        :root {
+            --primary: #f97316;
+            --bg: #0b0f1a;
+            --card: #161b2c;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: white;
+            user-select: none;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 8px solid #1e293b;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            box-shadow: 0 0 50px rgba(249, 115, 22, 0.15);
+        }
+
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 900;
+            color: white;
+            padding-bottom: 55px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+            line-height: 1;
+        }
+
+        .receipt-card {
+            background: #ffffff;
+            color: #000;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 350px;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .locked-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.98);
+            z-index: 80; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        #reader {
+            border: none !important;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:active { transform: scale(0.96); }
+
+        .glass-ui {
+            background: rgba(22, 27, 44, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .package-badge {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24">
+
+    <!-- Kilit Ekranı -->
+    <div id="lock-screen" class="locked-screen">
+        <div class="bg-red-500/20 p-8 rounded-full mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+        <h1 class="text-3xl font-black mb-2 tracking-tighter uppercase text-white">Hesap Bloke Edildi</h1>
+        <p class="text-gray-500 max-w-xs">Yönetici tarafından erişiminiz engellenmiştir. İşlem yapılamaz.</p>
+    </div>
+
+    <!-- Üst Bar -->
+    <header class="p-6 flex justify-between items-center sticky top-0 z-[90] glass-ui border-b border-white/5">
+        <div>
+            <h1 class="text-xl font-black italic tracking-tighter text-orange-500 uppercase">Altan <span class="text-white">Points</span></h1>
+            <div class="flex items-center gap-2 mt-1">
+                <div class="bg-black/40 px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2">
+                    <span id="display-points" class="text-lg font-black mono text-orange-400">0</span>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Pts</span>
+                </div>
+            </div>
+        </div>
+        <button onclick="openAdmin()" class="p-3 rounded-2xl bg-white/5 hover:bg-orange-500/20 transition-all border border-white/10 relative z-[100]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            </svg>
+        </button>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-10 mt-4">
+        
+        <!-- Hizmet Listesi ve Paketler -->
+        <section>
+            <h2 class="text-sm font-black text-gray-500 uppercase tracking-[0.2em] mb-4 px-2 italic text-white/50">Hizmet Listesi</h2>
+            <div id="store-items" class="grid grid-cols-1 gap-3 mb-10">
+                <!-- Hizmetler JS ile gelecek -->
+            </div>
+
+            <h2 class="text-sm font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 px-2 italic">Özel Paketler</h2>
+            <div id="package-items" class="grid grid-cols-1 gap-4">
+                <!-- Paketler JS ile gelecek -->
+            </div>
+        </section>
+
+        <!-- Çark Bölümü -->
+        <section class="flex flex-col items-center">
+            <h2 class="text-sm font-black text-gray-500 uppercase tracking-[0.2em] mb-8 italic">Şans Çarkı</h2>
+            <div id="wheel-pointer" class="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-orange-500 z-10 -mb-2"></div>
+            <div id="wheel" class="wheel-container"></div>
+            <button onclick="spinWheel()" id="spin-btn" class="mt-8 w-full py-4 btn-primary rounded-2xl font-black uppercase text-lg shadow-xl shadow-orange-500/20">
+                Çarkı Çevir <span class="ml-2 text-xs opacity-60">2156 PTS</span>
+            </button>
+        </section>
+
+        <!-- Kamera QR Doğrulama -->
+        <section class="p-6 rounded-[2rem] glass-ui border border-orange-500/20">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-orange-500/20 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                </div>
+                <h2 class="text-lg font-bold uppercase italic">Fiş Doğrulayıcı</h2>
+            </div>
+            
+            <div id="reader" class="mb-4 bg-black/40"></div>
+            <div id="verify-result" class="hidden p-4 rounded-xl text-center font-bold mb-4"></div>
+            
+            <button onclick="startScanner()" id="scanner-btn" class="w-full bg-indigo-600 py-4 rounded-2xl font-black uppercase transition-all flex items-center justify-center gap-2">
+                TARAMAYI BAŞLAT
+            </button>
+        </section>
+
+    </main>
+
+    <!-- Admin Panel Modalı -->
+    <div id="admin-modal" class="hidden fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#0f172a] rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+            <!-- Auth -->
+            <div id="admin-auth" class="p-10 text-center">
+                <h3 class="text-2xl font-black mb-6 italic uppercase">Yönetici Erişimi</h3>
+                <input type="password" id="admin-code" placeholder="GÜVENLİK KODU" class="w-full p-4 bg-black/40 border border-white/10 rounded-2xl mb-4 text-center mono text-orange-500 text-xl outline-none focus:border-orange-500 uppercase">
+                <button onclick="checkAdmin()" class="w-full btn-primary py-4 rounded-2xl font-black uppercase">Giriş Yap</button>
+                <button onclick="closeModal('admin-modal')" class="mt-4 text-gray-500 font-bold uppercase text-xs">Kapat</button>
+            </div>
+            <!-- Main Admin -->
+            <div id="admin-main" class="hidden p-6 max-h-[85vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                    <h3 class="text-xl font-black italic uppercase">Panel (NPM5)</h3>
+                    <button onclick="toggleLock()" id="lock-btn" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase"></button>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-black/40 p-5 rounded-2xl border border-white/5">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Puan Güncelle</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="pts-val" placeholder="Miktar" class="flex-1 bg-slate-800 p-3 rounded-xl border-none font-bold mono">
+                            <button onclick="changePoints(true)" class="px-4 bg-green-500/20 text-green-500 rounded-xl font-bold text-xl">+</button>
+                            <button onclick="changePoints(false)" class="px-4 bg-red-500/20 text-red-500 rounded-xl font-bold text-xl">-</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-black text-gray-500 uppercase mb-4 tracking-widest px-1">İşlem Günlüğü</h4>
+                        <div id="admin-logs" class="space-y-2">
+                            <!-- Loglar -->
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="closeModal('admin-modal')" class="w-full mt-8 bg-white/5 py-4 rounded-2xl text-gray-400 font-bold border border-white/5">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fiş Modalı -->
+    <div id="receipt-modal" class="hidden fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
+        <div id="receipt-wrap" class="receipt-card">
+            <div class="text-center border-b-2 border-black border-dashed pb-6 mb-6">
+                <h2 class="text-2xl font-black italic leading-none uppercase">Altan Points</h2>
+                <p class="text-[10px] font-bold mt-2 uppercase tracking-widest">Resmi İşlem Makbuzu</p>
+            </div>
+            
+            <div class="space-y-2 text-[11px] font-bold mb-6">
+                <div class="flex justify-between"><span>TARİH:</span><span id="r-date">00.00.0000</span></div>
+                <div class="flex justify-between"><span>SAAT:</span><span id="r-time">00:00</span></div>
+                <div class="flex justify-between"><span>REF NO:</span><span id="r-id" class="text-orange-600">#ALT-0000</span></div>
+            </div>
+
+            <div class="py-6 border-y-2 border-black border-dashed mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p id="r-item" class="text-lg font-black uppercase leading-none">Hizmet Adı</p>
+                        <p class="text-[9px] text-gray-500 mt-1 uppercase" id="r-type">Babama Özel Hizmet Alımı</p>
+                    </div>
+                    <p id="r-price" class="text-xl font-black">0 PTS</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center py-4">
+                <div class="bg-white p-2 border-2 border-black rounded-lg">
+                    <img id="r-qr" src="" alt="QR" class="w-32 h-32">
+                </div>
+                <p class="text-[8px] mt-4 text-center font-bold opacity-30 uppercase">Bu fiş sistem tarafından onaylanmıştır</p>
+            </div>
+            
+            <div class="mt-8 text-center text-[9px] font-bold opacity-20">
+                <p>***********************************</p>
+                <p>ALTAN POINTS ECOSYSTEM V1.0</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-4 w-full max-w-[350px] mt-8">
+            <button onclick="saveReceipt()" class="flex-1 btn-primary py-4 rounded-2xl font-black uppercase text-sm">Resmi Kaydet</button>
+            <button onclick="closeModal('receipt-modal')" class="px-6 bg-white/10 rounded-2xl font-black text-white">X</button>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            points: 10000,
+            isLocked: false,
+            history: [],
+            // Market listesi
+            store: [
+                { id: 1, name: '1 Gıdı', price: 500, emoji: '😊', color: '#f97316', inWheel: true },
+                { id: 2, name: '1 Kol Isırma', price: 1000, emoji: '💪', color: '#3b82f6', inWheel: true },
+                { id: 3, name: '1 Kulak', price: 1500, emoji: '👂', color: '#ef4444', inWheel: true },
+                { id: 4, name: 'Her Konuda Destek', price: 750, emoji: '🤝', color: '#10b981', inWheel: true },
+                { id: 5, name: '30 dk PS / PC İzni', price: 1750, emoji: '🎮', color: '#8b5cf6', inWheel: true },
+                { id: 6, name: 'Gece Senle Yatma', price: 3500, emoji: '🛌', color: '#ec4899', inWheel: true },
+                { id: 7, name: 'Kahve Yapma', price: 750, emoji: '☕', color: '#78350f', inWheel: true },
+                { id: 8, name: 'İstenilen Yemek', price: 7500, emoji: '🍽️', color: '#eab308', inWheel: true },
+                // Paketler
+                { 
+                    id: 9, 
+                    name: 'Basic Paket', 
+                    price: 17500, 
+                    emoji: '📦', 
+                    color: '#94a3b8', 
+                    inWheel: false, 
+                    isPackage: true,
+                    desc: '7 Gıdı, 5 Kol, 3 Kulak, 1 Saat Oyun, 2 Kahve'
+                },
+                { 
+                    id: 10, 
+                    name: 'Pro Paket', 
+                    price: 28500, 
+                    emoji: '💎', 
+                    color: '#4f46e5', 
+                    inWheel: false, 
+                    isPackage: true,
+                    desc: '10 Gıdı, 7 Kol, 5 Kulak, 2 Saat Oyun, 4 Kahve'
+                },
+                { 
+                    id: 11, 
+                    name: 'MEGAAAA Paket', 
+                    price: 70000, 
+                    emoji: '🔥', 
+                    color: '#ef4444', 
+                    inWheel: false, 
+                    isPackage: true,
+                    desc: '20 Gıdı, 13 Kol, 15 Kulak, 4 Saat Oyun, 6 Kahve, 2 Gece Yatma'
+                }
+            ]
+        };
+
+        let qrScanner;
+
+        window.onload = () => {
+            load();
+            renderStore();
+            initWheel();
+            updateUI();
+        };
+
+        function updateUI() {
+            document.getElementById('display-points').innerText = state.points.toLocaleString();
+            document.getElementById('lock-screen').style.display = state.isLocked ? 'flex' : 'none';
+            
+            const lBtn = document.getElementById('lock-btn');
+            lBtn.innerText = state.isLocked ? '🔓 KİLİDİ AÇ' : '🔒 HESABI KİTLE';
+            lBtn.className = state.isLocked ? 
+                'px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-green-500/20 text-green-500 border border-green-500/30' : 
+                'px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-red-500/20 text-red-500 border border-red-500/30';
+            
+            renderLogs();
+            save();
+        }
+
+        function renderStore() {
+            const hContainer = document.getElementById('store-items');
+            const pContainer = document.getElementById('package-items');
+            
+            hContainer.innerHTML = state.store.filter(p => !p.isPackage).map(p => `
+                <div onclick="buyItem(${p.id})" class="p-4 rounded-[1.2rem] glass-ui flex justify-between items-center group cursor-pointer border-b-4 border-black/30 active:translate-y-1 active:border-b-0 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-lg" style="background: ${p.color}">${p.emoji}</div>
+                        <div>
+                            <h3 class="font-black italic uppercase tracking-tighter text-sm">${p.name}</h3>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Hizmet</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-md font-black mono text-orange-400">${p.price} <span class="text-[8px]">PTS</span></p>
+                    </div>
+                </div>
+            `).join('');
+
+            pContainer.innerHTML = state.store.filter(p => p.isPackage).map(p => `
+                <div onclick="buyItem(${p.id})" class="p-5 rounded-[1.5rem] bg-indigo-900/40 border border-indigo-500/30 flex justify-between items-center group cursor-pointer border-b-8 border-black/40 active:translate-y-2 active:border-b-0 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-2xl" style="background: ${p.color}">${p.emoji}</div>
+                        <div>
+                            <h3 class="font-black italic uppercase tracking-tighter text-lg leading-none">${p.name}</h3>
+                            <p class="text-[10px] text-indigo-300 font-bold mt-2 leading-tight max-w-[150px] uppercase">${p.desc}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-black mono text-indigo-400">${p.price.toLocaleString()}</p>
+                        <p class="text-[10px] font-bold text-indigo-300/50 uppercase">PTS</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function initWheel() {
+            const w = document.getElementById('wheel');
+            const wheelItems = state.store.filter(i => i.inWheel);
+            const deg = 360 / wheelItems.length;
+            w.innerHTML = wheelItems.map((p, i) => `
+                <div class="wheel-segment" style="transform: rotate(${i * deg}deg) skewY(${90 - deg}deg); background: ${p.color}">
+                    <span style="transform: skewY(-${90 - deg}deg) rotate(${deg / 2}deg);">${p.name}</span>
+                </div>
+            `).join('');
+        }
+
+        let isSpinning = false;
+        function spinWheel() {
+            const cost = 2156;
+            if (isSpinning || state.points < cost) {
+                if(state.points < cost) alert("Yetersiz puan! Çark için 2156 PTS gerekiyor.");
+                return;
+            }
+            isSpinning = true;
+            state.points -= cost;
+            updateUI();
+
+            const wheelItems = state.store.filter(i => i.inWheel);
+            const extra = Math.floor(Math.random() * 360) + 3600;
+            const w = document.getElementById('wheel');
+            w.style.transform = `rotate(${extra}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                const actual = extra % 360;
+                const idx = Math.floor(((360 - actual) % 360) / (360 / wheelItems.length));
+                const item = wheelItems[idx];
+                createReceipt(item.name + " (ÇARK ÖDÜLÜ)", 0, false);
+                w.style.transition = 'none';
+                w.style.transform = `rotate(${actual}deg)`;
+                setTimeout(() => w.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)', 50);
+            }, 4000);
+        }
+
+        function buyItem(id) {
+            if (state.isLocked) return;
+            const p = state.store.find(x => x.id === id);
+            if (state.points >= p.price) {
+                state.points -= p.price;
+                createReceipt(p.name, p.price, p.isPackage);
+                updateUI();
+            } else {
+                alert("Puanınız yetersiz!");
+            }
+        }
+
+        function createReceipt(name, price, isPackage) {
+            const d = new Date();
+            const r = {
+                id: 'ALT-' + Math.floor(1000 + Math.random() * 8999),
+                item: name,
+                price: price,
+                date: d.toLocaleDateString('tr-TR'),
+                time: d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+                ts: d.getTime()
+            };
+            state.history.unshift(r);
+            
+            document.getElementById('r-date').innerText = r.date;
+            document.getElementById('r-time').innerText = r.time;
+            document.getElementById('r-id').innerText = "#" + r.id;
+            document.getElementById('r-item').innerText = r.item;
+            document.getElementById('r-price').innerText = r.price.toLocaleString() + " PTS";
+            document.getElementById('r-type').innerText = isPackage ? "Babama Özel Paket Alımı" : "Babama Özel Hizmet Alımı";
+            document.getElementById('r-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${r.id}`;
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function openAdmin() {
+            document.getElementById('admin-modal').classList.remove('hidden');
+            document.getElementById('admin-auth').classList.remove('hidden');
+            document.getElementById('admin-main').classList.add('hidden');
+            document.getElementById('admin-code').value = '';
+        }
+
+        function checkAdmin() {
+            if (document.getElementById('admin-code').value.toUpperCase() === 'NPM5') {
+                document.getElementById('admin-auth').classList.add('hidden');
+                document.getElementById('admin-main').classList.remove('hidden');
+            } else {
+                alert("GÜVENLİK KODU HATALI!");
+            }
+        }
+
+        function changePoints(add) {
+            const v = parseInt(document.getElementById('pts-val').value) || 0;
+            state.points = add ? state.points + v : Math.max(0, state.points - v);
+            updateUI();
+        }
+
+        function toggleLock() {
+            state.isLocked = !state.isLocked;
+            updateUI();
+        }
+
+        function renderLogs() {
+            const c = document.getElementById('admin-logs');
+            if (!state.history.length) { c.innerHTML = '<p class="text-center text-[10px] text-gray-600 py-10 uppercase font-bold tracking-widest">Kayıt bulunamadı</p>'; return; }
+            c.innerHTML = state.history.map(h => `
+                <div class="p-4 bg-black/20 rounded-xl border border-white/5 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-black uppercase italic">${h.item}</p>
+                        <p class="text-[8px] text-gray-500 font-bold mono">${h.date} ${h.time} | #${h.id}</p>
+                    </div>
+                    <p class="text-xs font-bold mono ${h.price > 0 ? 'text-red-400' : 'text-green-400'}">${h.price > 0 ? '-' : ''}${h.price.toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+        function startScanner() {
+            const b = document.getElementById('scanner-btn');
+            const r = document.getElementById('verify-result');
+
+            if (qrScanner && qrScanner.getState() === 2) {
+                qrScanner.stop().then(() => { b.innerText = "TARAMAYI BAŞLAT"; r.classList.add('hidden'); });
+                return;
+            }
+
+            qrScanner = new Html5Qrcode("reader");
+            r.classList.remove('hidden');
+            r.innerText = "Kamera taranıyor...";
+            r.className = "p-4 rounded-xl text-center font-bold mb-4 bg-white/5 text-orange-400 uppercase text-xs";
+            b.innerText = "DURDUR";
+
+            qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+                const code = txt.replace('#', '').toUpperCase();
+                const found = state.history.find(x => x.id === code || x.id === "ALT-"+code);
+                if (found) {
+                    r.innerHTML = `ONAYLANDI: ${found.item}<br><span class="text-[10px] opacity-60">${found.date}</span>`;
+                    r.className = "p-4 rounded-xl text-center font-black mb-4 bg-green-500 text-white animate-pulse uppercase";
+                } else {
+                    r.innerText = "GEÇERSİZ FİŞ!";
+                    r.className = "p-4 rounded-xl text-center font-black mb-4 bg-red-500 text-white uppercase";
+                }
+            });
+        }
+
+        function saveReceipt() {
+            html2canvas(document.getElementById('receipt-wrap'), { scale: 3 }).then(cvs => {
+                const a = document.createElement('a');
+                a.download = `Fis_${Date.now()}.png`;
+                a.href = cvs.toDataURL();
+                a.click();
+            });
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function save() { localStorage.setItem('altan_babam_v2', JSON.stringify(state)); }
+        function load() { const s = localStorage.getItem('altan_babam_v2'); if (s) state = JSON.parse(s); }
+    </script>
+</body>
+</html>
